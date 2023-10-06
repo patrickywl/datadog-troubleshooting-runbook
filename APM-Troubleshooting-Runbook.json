@@ -1,0 +1,802 @@
+{
+  "data": {
+    "type": "notebooks",
+    "attributes": {
+      "name": "APM Troubleshooting Runbook",
+      "metadata": {
+        "type": "runbook"
+      },
+      "time": {
+        "live_span": "30m"
+      },
+      "cells": [
+        {
+          "id": "t0u5gmsy",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## APM Troubleshooting Runbook\nThis guide aims to help diagnose and resolve common APM issues."
+            }
+          }
+        },
+        {
+          "id": "w3xzipnu",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "### **Review APM Metrics**\nUnderstanding the key metrics sent by the Datadog Agent when APM is enabled is crucial."
+            }
+          }
+        },
+        {
+          "id": "rqjz5xi4",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Is the Agent Running?\n`datadog.agent.running`\n\n`datadog.trace_agent.heartbeat`\n\nThese metrics represent the status of the Datadog Agent. If these metrics are not reported, it is likely there is an issue with agent might not be running or submitting metrics accordingly."
+            }
+          }
+        },
+        {
+          "id": "7bswq3ce",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query_events_current_rate"
+                    },
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_events_current_rate",
+                      "query": "avg:datadog.trace_agent.heartbeat{*}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "avg:datadog.agent.running{*}"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "jxisp2rd",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "exclude_null(query_events_current_rate)"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_events_current_rate",
+                      "query": "avg:datadog.trace_agent.receiver.traces_received{*} by {tracer_version,lang,lang_version,endpoint_version}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "oktpdzls",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "\"datadog.trace_agent.receiver.traces_received\"",
+                    "indexes": [],
+                    "storage": "hot"
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "host",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "service",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "auto"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "agtqdazv",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Receiver Metrics: `datadog.trace_agent.receiver.error`\nThis metric indicates the number of times the API rejected a payload due to decoding, formatting, or other errors. A high count can be a sign of malformed payloads or issues with the APM instrumentation in the application."
+            }
+          }
+        },
+        {
+          "id": "mgcy95x9",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_receiver_error",
+                      "query": "avg:datadog.trace_agent.receiver.error{*}"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "l2ehk72h",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Receiver Metrics: `datadog.trace_agent.receiver.traces_received`\nThis metric indicates the Number of traces received and accepted."
+            }
+          }
+        },
+        {
+          "id": "ly52h1qr",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "sum:datadog.trace_agent.receiver.traces_received{*}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "up64ngml",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Receiver Metrics: `datadog.trace_agent.receiver.tcp_connections`\nThis metric indicates the Number of TCP connections coming in to the agent."
+            }
+          }
+        },
+        {
+          "id": "tctiuw8x",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query_receiver_error"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_receiver_error",
+                      "query": "sum:datadog.trace_agent.receiver.tcp_connections{*}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "xtem4rxd",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Writer Metrics: `datadog.trace_agent.stats_writer.errors`\nThis metric counts the errors that could not be retried when the agent tries to write stats. Continuous errors might indicate connectivity issues with Datadog's servers or internal issues within the Agent."
+            }
+          }
+        },
+        {
+          "id": "tu7xutjn",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_writer_errors",
+                      "query": "avg:datadog.trace_agent.stats_writer.errors{*}"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "jsen5kzq",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Writer Metrics: `datadog.trace_agent.stats_writer.bytes`\nThis metric counts the Number of bytes sent (calculated after Gzip)."
+            }
+          }
+        },
+        {
+          "id": "q25eqdc5",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query_writer_errors"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_writer_errors",
+                      "query": "sum:datadog.trace_agent.stats_writer.bytes{*}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "dm9hzvq2",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## General Agent Metrics: `datadog.trace_agent.cpu_percent`\nThis metric provides the CPU usage of the Agent in terms of percentage of a core. For instance, a value of 50 indicates half a core. A sudden spike in CPU usage can indicate high load or potential issues with the Agent processing traces efficiently."
+            }
+          }
+        },
+        {
+          "id": "ayrmytmc",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "The Agent buffers unprocessed payloads in memory, so throttling the Agent process because of an insufficient CPU limit can lead to an out-of-memory issue."
+            }
+          }
+        },
+        {
+          "id": "jwvgi89s",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "# Detect out-of-CPU\n\nTo monitor CPU usage and detect oncoming out-of-CPU issues, compare the maximum CPU percentage configured for the Agent to the datadog.trace_agent.cpu_percent metric. The `datadog.trace_agent.cpu_percent` metric is CPU usage in terms of percentage of a core. \n\nFor example, a value of `50` is half a core, or `200` is two cores.\n\nSee the full list of Agent APM metrics."
+            }
+          }
+        },
+        {
+          "id": "qbpbltde",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "# Resource requirements\n\nA good indicator to calculate adequate resource limits for the Agent is the number of spans received per second, reported in the datadog.trace_agent.receiver.spans_received metric. Based on that metric’s value, follow the table below to choose adequate CPU and memory limits:\n\n| SPANS PER SECOND | CPU (CORE) | MEMORY (MB) |\n|------------------|------------|-------------|\n| 2000             | 0.05       | 35          |\n| 11 000           | 0.2        | 40          |\n| 32 000           | 0.6        | 60          |\n| 58 000           | 1          | 70          |\n| 130 000          | 2          | 130         |"
+            }
+          }
+        },
+        {
+          "id": "k0lhsf85",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "# Notes:\n\n- The values are based on Agent 7.39.0 benchmarks.\n- The benchmarks were performed on an AWS c5.2xlarge instance (8 VCPU/ 16GiB RAM)."
+            }
+          }
+        },
+        {
+          "id": "yuwx9p67",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_cpu_percent",
+                      "query": "avg:datadog.trace_agent.cpu_percent{*}"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "kxp345db",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query_cpu_percent"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_cpu_percent",
+                      "query": "sum:datadog.estimated_usage.apm.ingested_spans{*}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "lap442oj",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "### Agent Rate Limits"
+            }
+          }
+        },
+        {
+          "id": "b678ze6c",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Maximum connection limit\n\nIf you encounter the following error message in your Agent logs, the default APM connection limit of 2000 has been exceeded:\n\n`ERROR | (pkg/trace/logutil/throttled.go:38 in log) | http.Server: http: Accept error: request has been rate-limited; retrying in 80ms`\n\nTo increase the APM connection limit for the Agent, configure the `connection_limit` attribute within the Agent’s configuration file (underneath the `apm_config:` section). For containerized deployments (for example, Docker or Kubernetes), use the DD_APM_CONNECTION_LIMIT environment variable."
+            }
+          }
+        },
+        {
+          "id": "zsr3bu2j",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "request has been rate-limited",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "host",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "service",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "@trace_id",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "message",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "kf40bgz4",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Maximum memory limit\n\nIf you encounter the following error message in your Agent logs, it means the Agent has exceeded the max memory usage by 150%:\n\n`CRITICAL | (pkg/trace/api/api.go:703 in watchdog) | Killing process. Memory threshold exceeded: 8238.08M / 715.26M`\n`CRITICAL | (pkg/trace/osutil/file.go:39 in Exitf) | OOM`\n\nTo increase the max memory limit for the Agent, configure the `max_memory` attribute in the `apm_config` section of the Agent’s configuration file. For containerized deployments (for example, Docker or Kubernetes), use the DD_APM_MAX_MEMORY environment variable.\n\nIf you’d like your orchestrator (such as Kubernetes) to handle your memory limits, this limit can be disabled by setting it to 0 since Datadog Agent 7.23.0."
+            }
+          }
+        },
+        {
+          "id": "5p918etc",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "Killing process. Memory threshold exceeded OR OOM",
+                    "indexes": [
+                      "*"
+                    ],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "host",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "service",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "@trace_id",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "message",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "jelw9k68",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Maximum CPU percentage\n\nThis setting defines the maximum CPU percentage that the APM agent should be using. In non-Kubernetes environments it defaults to `50`, which is equivalent to `0.5 cores (100 = 1 core)`. After this limit is reached, payloads will be refused until the CPU usage goes below the limit again. \n\nThis is reflected by the `datadog.trace_agent.receiver.ratelimit` which represents the percentage of payloads that are currently being dropped (a value of 1 meaning that no traces are being dropped). This may also be visible in the Service Table View as a Limited Resource warning.\n\nIf you want your orchestrator (or an external service) to manage resource limitations for the Datadog Agent, Datadog recommends disabling this by setting the environment variable `DD_APM_MAX_CPU_PERCENT` to `0` (supported since Datadog Agent 7.23.0)."
+            }
+          }
+        },
+        {
+          "id": "gbu8pgxe",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "timeseries",
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query_cpu_percentage_ratelimit",
+                      "query": "avg:datadog.trace_agent.receiver.ratelimit{*}"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "27eqxf9s",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## **Troubleshooting**"
+            }
+          }
+        },
+        {
+          "id": "v5hnmb16",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "### **Inspect Tracer Startup Logs**\n\nReviewing startup logs can provide insights into tracer initialization and any potential errors.\n\n[Tracer Startup Logs](https://docs.datadoghq.com/tracing/troubleshooting/tracer_startup_logs/)"
+            }
+          }
+        },
+        {
+          "id": "jny4i38l",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "\"DATADOG TRACER CONFIGURATION\" OR \"DATADOG TRACER DIAGNOSTICS\" OR \"DATADOG ERROR\" OR \"DATADOG CONFIGURATION\"",
+                    "indexes": [
+                      "*"
+                    ],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "7n6e75lq",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "### **Examine Debug Logs**\n\nIt's essential to understand how the tracer was initialized and if traces were sent to the Agent.\n\n[Tracer Debug Logs](https://docs.datadoghq.com/tracing/troubleshooting/tracer_debug_logs?code-lang=java)"
+            }
+          }
+        },
+        {
+          "id": "5lq8hwrg",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "# **Steps:**\n1. Ensure the Datadog Agent is set up correctly.\n2. Verify the network configurations, especially in containerized setups.\n3. Check the Datadog Agent's status to see if APM is running.\n4. Ensure there's no conflict with port 8126.\n5. If issues persist, consider contacting Datadog support with the necessary logs and configuration details."
+            }
+          }
+        }
+      ],
+      "template_variables": []
+    }
+  }
+}

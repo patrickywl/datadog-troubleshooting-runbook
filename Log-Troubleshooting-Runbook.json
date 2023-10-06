@@ -1,0 +1,760 @@
+{
+  "data": {
+    "type": "notebooks",
+    "attributes": {
+      "name": "Log Troubleshooting Runbook",
+      "metadata": {
+        "type": "runbook"
+      },
+      "time": {
+        "live_span": "30m"
+      },
+      "cells": [
+        {
+          "id": "7icle37p",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Log Troubleshooting Runbook\n\nThis guide aims to help diagnose and resolve common log issues."
+            }
+          }
+        },
+        {
+          "id": "38kfis42",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Is the Agent Running?\n`datadog.agent.running`\n\nThese metrics represent the status of the Datadog Agent. If these metrics are not reported, it is likely there is an issue with agent might not be running or submitting metrics accordingly."
+            }
+          }
+        },
+        {
+          "id": "hiueitvj",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "avg:datadog.agent.running{*}"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "r7j0kp8a",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Log Sending\n\nThis section helps diagnose issues related to log shipping.\n\n### Metrics\n\n- `datadog.estimated_usage.logs.ingested_bytes`: Total ingestion of logs in bytes.\n- `datadog.estimated_usage.logs.ingested_events`: Total number of ingested events, including excluded logs.\n\n### Logs\n\nLook for messages related to log sending. For instance:\n- `Successfully posted payload to the logs intake`\n- `Error while sending a payload to the logs intake`"
+            }
+          }
+        },
+        {
+          "id": "h7vkrkik",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "**Resolution:** \n- If there are errors in sending logs, ensure that:\n  - The Datadog Agent is running and has internet access.\n  - The Agent is correctly configured to send logs to Datadog.\n\n**Prevention:** Regularly monitor the Agent logs and metrics to ensure logs are being sent successfully.\n"
+            }
+          }
+        },
+        {
+          "id": "00db5036",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    },
+                    {
+                      "formula": "query2"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "query": "avg:datadog.estimated_usage.logs.ingested_bytes{*} by {datadog_index,service}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "query2",
+                      "query": "sum:datadog.estimated_usage.logs.ingested_events{*} by {datadog_index,datadog_is_excluded,service,status}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {
+                "scale": "linear"
+              }
+            },
+            "time": null
+          }
+        },
+        {
+          "id": "awpqp0h9",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Send Messages",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "\" Send messages for pipeline logs\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "1oiya6kc",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Payload Dropped",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "\"Encoding failed - dropping payload\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "vyn7vvst",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "**Resolution:** Investigate the reasons for the log drops and rectify any issues in the source or the Agent.\n\n**Prevention:** Regularly monitor the number of logs being sent and received to ensure no logs are being dropped."
+            }
+          }
+        },
+        {
+          "id": "x5vgey5n",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Agent File Open & OS File Limit\n\nMonitor log handling activities:\n- `Agent process currently has`"
+            }
+          }
+        },
+        {
+          "id": "y0hhf90t",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Agent File Open",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "\"Agent process currently has\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "4w6ejtfq",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Log Handling\n\nMonitor log handling activities:\n- `Starting a new tailer`\n- `Scan - got`\n- `Log rotation happened`"
+            }
+          }
+        },
+        {
+          "id": "7vvmdyef",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "**Resolution:** \n- If there are issues in tailing files:\n  - Ensure the specified files exist and are accessible by the Agent.\n  - Check for any recent changes to the file paths or permissions.\n\n**Prevention:** Regularly review Agent logs for any tailing-related errors."
+            }
+          }
+        },
+        {
+          "id": "74c18l4j",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Starting a new tailer",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "source:agent  \"Starting a new tailer\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "tm09z8xq",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "# of Files Tailed",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "source:agent   \"Scan - got\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "yhqtn1mr",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Log Rotation",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "source:agent   \"Log rotation happened\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "15pt6vre",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Network Issues\n\nProblems related to network are discussed here.\n\n### Logs\n\nSeek messages that indicate network problems:\n- `HTTP connectivity failure`"
+            }
+          }
+        },
+        {
+          "id": "8zitjpnn",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "**Resolution:** \n- If there are configuration errors:\n  - Review the Agent's log configuration.\n  - Ensure it adheres to the expected format and values.\n\n**Prevention:** Always validate configuration changes before applying them."
+            }
+          }
+        },
+        {
+          "id": "j94mucxg",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "HTTP Connectivity Failure",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "source:agent \"HTTP connectivity failure\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "22rzyxja",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Multiline \n\nSearch for messages related to Multiline:\n- `using multi-line handler`\n- `Auto multi line log detection enabled`"
+            }
+          }
+        },
+        {
+          "id": "2txyxm46",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Multiline",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "source:agent \"using multi-line handler\" OR \"Auto multi line log detection enabled\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "82ck1afi",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Agent Lifecycle\n\n### Logs\n\nMonitor the lifecycle of the logs-agent:\n- `Starting logs-agent...`\n- `logs-agent started`\n- `Stopping logs-agent`\n- `logs-agent stopped`\n- `Timed out when stopping logs-agent, forcing it to stop now`"
+            }
+          }
+        },
+        {
+          "id": "5xkdznuj",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Lifecycle",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "source:agent  \"Starting logs-agent...\" OR \"logs-agent started\" OR \"Stopping logs-agent\" OR \"logs-agent stopped\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "t3aepujl",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "Timeout",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "source:agent  \"Timed out when stopping logs-agent, forcing it to stop now\"",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "order": "desc",
+                      "column": "timestamp"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ],
+              "type": "list_stream"
+            },
+            "time": null,
+            "graph_size": "l"
+          }
+        },
+        {
+          "id": "mjbkw189",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "type": "markdown",
+              "text": "## Ingested Logs Issues\n\nCustomers don’t get charged on ingested logs if they are indexing 100% of their logs. If they stop indexing 100% logs (either via exclusion filters or an index daily quota) they may see an unusual spike in the Ingested Usage graph.\n\n### Possible Causes\n\nA sudden spike in this graph could be attributed to any of the following:\n- Some logs are not matching any index.\n- Exclusion filters within an index are causing logs to get dropped (not indexed).\n- Daily quota(s) reached on an index.\n\n**Resolution:**\n- Review the indexing settings to ensure all logs are getting indexed.\n- Check any exclusion filters and ensure they are correctly applied.\n- Monitor the daily quotas and adjust if necessary.\n\n**Prevention:** Regularly review indexing settings and monitor the Ingested Usage graph for any unusual spikes."
+            }
+          }
+        },
+        {
+          "id": "8oiqo82c",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "datadog.estimated_usage.logs.ingested_events / datadog_is_excluded:true ",
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "name": "query1",
+                      "data_source": "metrics",
+                      "query": "sum:datadog.estimated_usage.logs.ingested_events{datadog_is_excluded:true} by {datadog_is_excluded,service,datadog_index}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "ru5s0o7u",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "datadog.estimated_usage.logs.ingested_events",
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "name": "query1",
+                      "data_source": "metrics",
+                      "query": "sum:datadog.estimated_usage.logs.ingested_events{*} by {datadog_is_excluded,service,datadog_index}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        },
+        {
+          "id": "fmslt3pj",
+          "type": "notebook_cells",
+          "attributes": {
+            "definition": {
+              "title": "datadog.estimated_usage.logs.ingested_bytes",
+              "show_legend": true,
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "name": "query1",
+                      "data_source": "metrics",
+                      "query": "sum:datadog.estimated_usage.logs.ingested_bytes{*} by {service,datadog_index}.as_count()"
+                    }
+                  ],
+                  "response_format": "timeseries",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "time": null,
+            "split_by": {
+              "tags": [],
+              "keys": []
+            }
+          }
+        }
+      ],
+      "template_variables": []
+    }
+  }
+}
